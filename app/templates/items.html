@@ -3,6 +3,7 @@
 <head>
     <title>Give Items</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.6.2/fuse.min.js"></script>
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -22,6 +23,9 @@
 
     <div class="container mt-5">
         <h1 class="mb-4">Give Items</h1>
+        <div id="alert" class="alert alert-warning d-none">No local items - autocomplete will not function. 
+            <button class="btn btn-sm btn-primary" onclick="fetchItems()">Refresh</button>
+        </div>
         <form method="post" class="p-4 border rounded bg-white">
             <div class="mb-3">
                 <label for="player" class="form-label">Player:</label>
@@ -29,7 +33,8 @@
             </div>
             <div class="mb-3">
                 <label for="item" class="form-label">Item:</label>
-                <input type="text" id="item" name="item" class="form-control" required>
+                <input type="text" id="item" name="item" class="form-control" required autocomplete="off">
+                <ul id="autocomplete-list" class="list-group position-absolute"></ul>
             </div>
             <div class="mb-3">
                 <label for="quantity" class="form-label">Quantity:</label>
@@ -38,6 +43,57 @@
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>
+
+    <script>
+        let items = [];
+        const itemInput = document.getElementById('item');
+        const autocompleteList = document.getElementById('autocomplete-list');
+        const alertBox = document.getElementById('alert');
+
+        function fetchItems() {
+            fetch('/fetch_items')
+                .then(response => response.json())
+                .then(data => {
+                    items = data.map(item => item.name);
+                    localStorage.setItem('minecraftItems', JSON.stringify(items));
+                    alertBox.classList.add('d-none');
+                })
+                .catch(() => {
+                    alertBox.classList.remove('d-none');
+                });
+        }
+
+        function loadItems() {
+            const cachedItems = localStorage.getItem('minecraftItems');
+            if (cachedItems) {
+                items = JSON.parse(cachedItems);
+            } else {
+                alertBox.classList.remove('d-none');
+            }
+        }
+
+        function autocomplete() {
+            const fuse = new Fuse(items, { keys: ['name'], threshold: 0.3 });
+            autocompleteList.innerHTML = '';
+
+            if (itemInput.value.length > 0) {
+                const results = fuse.search(itemInput.value);
+                results.slice(0, 5).forEach(({ item }) => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item');
+                    listItem.textContent = item;
+                    listItem.onclick = () => {
+                        itemInput.value = item;
+                        autocompleteList.innerHTML = '';
+                    };
+                    autocompleteList.appendChild(listItem);
+                });
+            }
+        }
+
+        itemInput.addEventListener('input', autocomplete);
+        window.onload = loadItems;
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

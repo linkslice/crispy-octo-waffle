@@ -8,9 +8,12 @@ def create_app():
 
     from .routes.items import items_bp
     from .routes.teleport import teleport_bp
+    from .routes.fetch_items import fetch_items_bp
 
     app.register_blueprint(items_bp, url_prefix='/items')
     app.register_blueprint(teleport_bp, url_prefix='/teleport')
+    app.register_blueprint(fetch_items_bp, url_prefix='/fetch_items')
+
 
     # Add a route for the root URL
     @app.route('/')
